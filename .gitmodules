@@ -18,3 +18,7 @@
 	path = Tools/oggenc
 	url = http://github.com/KTXSoftware/oggenc_bin
 	branch = master
+[submodule "Tools/kravur"]
+	path = Tools/kravur
+	url = http://github.com/KTXSoftware/kravur_bin
+	branch = master
