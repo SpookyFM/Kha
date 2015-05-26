@@ -158,9 +158,6 @@ class Starter {
 				
 			}
 		}
-		
-		kha.audio2.Audio._init();
-		kha.audio2.Audio1._init();
 
 		Scheduler.start();
 		

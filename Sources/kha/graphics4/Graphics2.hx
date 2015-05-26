@@ -1,6 +1,5 @@
 package kha.graphics4;
 
-import haxe.io.Float32Array;
 import kha.Canvas;
 import kha.Color;
 import kha.Font;
@@ -32,7 +31,7 @@ class ImageShaderPainter {
 	private static var vertexSize: Int = 9;
 	private var bufferIndex: Int;
 	private var rectVertexBuffer: VertexBuffer;
-    private var rectVertices: Float32Array;
+    private var rectVertices: Array<Float>;
 	private var indexBuffer: IndexBuffer;
 	private var lastTexture: Image;
 	private var bilinear: Bool = false;
@@ -253,13 +252,13 @@ class ColoredShaderPainter {
 	private static var bufferSize: Int = 100;
 	private var bufferIndex: Int;
 	private var rectVertexBuffer: VertexBuffer;
-    private var rectVertices: Float32Array;
+    private var rectVertices: Array<Float>;
 	private var indexBuffer: IndexBuffer;
 	
 	private static var triangleBufferSize: Int = 100;
 	private var triangleBufferIndex: Int;
 	private var triangleVertexBuffer: VertexBuffer;
-    private var triangleVertices: Float32Array;
+    private var triangleVertices: Array<Float>;
 	private var triangleIndexBuffer: IndexBuffer;
 	
 	private var g: Graphics;
@@ -505,7 +504,7 @@ class TextShaderPainter {
 	private static var bufferSize: Int = 100;
 	private var bufferIndex: Int;
 	private var rectVertexBuffer: VertexBuffer;
-    private var rectVertices: Float32Array;
+    private var rectVertices: Array<Float>;
 	private var indexBuffer: IndexBuffer;
 	private var font: Kravur;
 	private var lastTexture: Image;

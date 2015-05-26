@@ -1,13 +1,13 @@
 package kha.graphics4;
 
-import haxe.io.Float32Array;
 import kha.graphics4.Usage;
 import kha.graphics4.VertexStructure;
 import kha.graphics4.VertexData;
 
 class VertexBuffer {
 	private var buffer: Dynamic;
-	private var data: Float32Array;
+	private var data: Array<Float>;
+	private var array: Float32Array;
 	private var mySize: Int;
 	private var myStride: Int;
 	private var sizes: Array<Int>;
@@ -32,7 +32,8 @@ class VertexBuffer {
 		}
 	
 		buffer = Sys.gl.createBuffer();
-		data = new Float32Array(Std.int(vertexCount * myStride / 4));
+		data = new Array<Float>();
+		data[Std.int(vertexCount * myStride / 4) - 1] = 0;
 		
 		sizes = new Array<Int>();
 		offsets = new Array<Int>();
@@ -67,15 +68,17 @@ class VertexBuffer {
 			}
 			++index;
 		}
+		array = new Float32Array(data);
 	}
 	
-	public function lock(?start: Int, ?count: Int): Float32Array {
+	public function lock(?start: Int, ?count: Int): Array<Float> {
 		return data;
 	}
 	
 	public function unlock(): Void {
+		array.set(data, 0);
 		Sys.gl.bindBuffer(Sys.gl.ARRAY_BUFFER, buffer);
-		Sys.gl.bufferData(Sys.gl.ARRAY_BUFFER, data, usage == Usage.DynamicUsage ? Sys.gl.DYNAMIC_DRAW : Sys.gl.STATIC_DRAW);
+		Sys.gl.bufferData(Sys.gl.ARRAY_BUFFER, array, usage == Usage.DynamicUsage ? Sys.gl.DYNAMIC_DRAW : Sys.gl.STATIC_DRAW);
 	}
 	
 	public function stride(): Int {
