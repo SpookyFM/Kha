@@ -1,5 +1,4 @@
 package kha.math;
-import haxe.ds.Vector;
 
 class Matrix4 {
 	private static inline var width: Int = 4;
@@ -27,14 +26,6 @@ class Matrix4 {
 			0, 0, 1, z,
 			0, 0, 0, 1
 		);
-	}
-
-	public static function translation(x: Float, y: Float, z: Float): Matrix4 {
-		var m = identity();
-		m.set(0, 3, x);
-		m.set(1, 3, y);
-		m.set(2, 3, z);
-		return m;
 	}
 	
 	public static inline function empty(): Matrix4 {
@@ -124,31 +115,15 @@ class Matrix4 {
 		);
 	}
 	
-	public static function perspectiveProjection(fovY: Float, aspect: Float, zn: Float, zf: Float): Matrix4 {
-		/*var f = Math.cos(2 / fovY);
-		return new Matrix4([
-			-f / aspect, 0, 0,                       0,
-			0,           f, 0,                       0,
-			0,           0, (zf + zn) / (zn - zf),   -1,
-			0,           0, 2 * zf * zn / (zn - zf), 0
-		]); */
-		
-		
-		var result: Matrix4 = Matrix4.empty();
-		
-		
-        var tanHalfFov: Float = Math.tan(fovY * 0.5);
-
-        result.set(0, 0, 1 / (aspect * tanHalfFov));
-		result.set(1, 1, 1 / tanHalfFov);
-		result.set(2, 2, zf / (zn - zf));
-		result.set(3, 2, -1);
-		result.set(2, 3, (zf * zn) / (zn - zf));
-		result.set(3, 3, 0);
-        
-        		
-		return result;
-		
+	public static inline function perspectiveProjection(fovY: Float, aspect: Float, zn: Float, zf: Float): Matrix4 {
+		var uh = Math.cos(fovY / 2) / Math.sin(fovY / 2);
+		var uw = uh / aspect;
+		return new Matrix4(
+			uw, 0, 0, 0,
+			0, uh, 0, 0,
+			0, 0, (zf + zn) / (zf - zn), -((2 * zf * zn) / (zf - zn)),
+			0, 0, 1, 0
+		);
 	}
 	
 	public static inline function lookAt(eye: Vector3, at: Vector3, up: Vector3): Matrix4 {
@@ -156,59 +131,13 @@ class Matrix4 {
 		zaxis.normalize();
 		var xaxis = up.cross(zaxis);
 		xaxis.normalize();
-		var yaxis = xaxis.cross(zaxis);
-
-		/* var view = new Matrix4([
-			xaxis.x, yaxis.x, -zaxis.x, 0,
-			xaxis.y, yaxis.y, -zaxis.y, 0,
-			xaxis.z, yaxis.z, -zaxis.z, 0,
-			-xaxis.dot(eye),       -yaxis.dot(eye),       -zaxis.dot(eye),        1
-		]); */
-		
-		/*
-		var view = new Matrix4([
-			xaxis.x, yaxis.y, -zaxis.z, 0,
-			xaxis.x, yaxis.y, -zaxis.z, 0, 
-			xaxis.x, yaxis.y, -zaxis.z, 0,
-			0,       0,       0,        1
-		]); 
-
-		
-		
-		return view.multmat(translation(-eye.x, -eye.y, -eye.z)); */
-		
-		
-		var result: Matrix4 = Matrix4.identity();
-	
-		var f: Vector3 = at.sub(eye);
-		f.normalize();
-		
-		var u: Vector3 = up;
-		u.normalize();
-		
-		var s: Vector3 = f.cross(u);
-		s.normalize();
-		
-		u = s.cross(f);
-		
-		
-		
-
-		
-		result.set(0, 0, s.x);
-		result.set(1, 0, s.y);
-		result.set(2, 0, s.z);
-		result.set(0, 1, u.x);
-		result.set(1, 1, u.y);
-		result.set(2, 1, u.z);
-		result.set(0, 2, -f.x);
-		result.set(1, 2, -f.y);
-		result.set(2, 2, -f.z);
-		result.set(3, 0, -s.dot(eye));
-		result.set(3, 1, -u.dot(eye));
-		result.set(3, 2,  f.dot(eye));
-		return result;
-		
+		var yaxis = zaxis.cross(xaxis);
+		return new Matrix4(
+			xaxis.x, xaxis.y, xaxis.z, -xaxis.dot(eye),
+			yaxis.x, yaxis.y, yaxis.z, -yaxis.dot(eye),
+			zaxis.x, zaxis.y, zaxis.z, -zaxis.dot(eye),
+			0, 0, 0, 1
+		);
 	}
 	
 	public function add(m: Matrix4): Matrix4 {
@@ -301,172 +230,153 @@ class Matrix4 {
 		);
 	}
 
-	/*public function inverse(): Matrix4 {
-		var inv: Vector<Float> = new Vector<Float>(16);
+	public function inverse(): Matrix4 {
+		var inv: Matrix4 = Matrix4.empty();
 		var det: Float;
 		
 		
 
-		inv[0] = matrix[5]  * matrix[10] * matrix[15] - 
-				 matrix[5]  * matrix[11] * matrix[14] - 
-				 matrix[9]  * matrix[6]  * matrix[15] + 
-				 matrix[9]  * matrix[7]  * matrix[14] +
-				 matrix[13] * matrix[6]  * matrix[11] - 
-				 matrix[13] * matrix[7]  * matrix[10];
+		inv._00 = _11  * _22 * _33 - 
+				 _11  * _32 * _23 - 
+				 _12  * _21  * _33 + 
+				 _12  * _31  * _23 +
+				 _13 * _21  * _32 - 
+				 _13 * _31  * _22;
 
-		inv[4] = -matrix[4]  * matrix[10] * matrix[15] + 
-				  matrix[4]  * matrix[11] * matrix[14] + 
-				  matrix[8]  * matrix[6]  * matrix[15] - 
-				  matrix[8]  * matrix[7]  * matrix[14] - 
-				  matrix[12] * matrix[6]  * matrix[11] + 
-				  matrix[12] * matrix[7]  * matrix[10];
+		inv._01 = -_01  * _22 * _33 + 
+				  _01  * _32 * _23 + 
+				  _02  * _21  * _33 - 
+				  _02  * _31  * _23 - 
+				  _03 * _21  * _32 + 
+				  _03 * _31  * _22;
 
-		inv[8] = matrix[4]  * matrix[9] * matrix[15] - 
-				 matrix[4]  * matrix[11] * matrix[13] - 
-				 matrix[8]  * matrix[5] * matrix[15] + 
-				 matrix[8]  * matrix[7] * matrix[13] + 
-				 matrix[12] * matrix[5] * matrix[11] - 
-				 matrix[12] * matrix[7] * matrix[9];
+		inv._02 = _01  * _12 * _33 - 
+				 _01  * _32 * _13 - 
+				 _02  * _11 * _33 + 
+				 _02  * _31 * _13 + 
+				 _03 * _11 * _32 - 
+				 _03 * _31 * _12;
 
-		inv[12] = -matrix[4]  * matrix[9] * matrix[14] + 
-				   matrix[4]  * matrix[10] * matrix[13] +
-				   matrix[8]  * matrix[5] * matrix[14] - 
-				   matrix[8]  * matrix[6] * matrix[13] - 
-				   matrix[12] * matrix[5] * matrix[10] + 
-				   matrix[12] * matrix[6] * matrix[9];
+		inv._03 = -_01  * _12 * _23 + 
+				   _01  * _22 * _13 +
+				   _02  * _11 * _23 - 
+				   _02  * _21 * _13 - 
+				   _03 * _11 * _22 + 
+				   _03 * _21 * _12;
 
-		inv[1] = -matrix[1]  * matrix[10] * matrix[15] + 
-				  matrix[1]  * matrix[11] * matrix[14] + 
-				  matrix[9]  * matrix[2] * matrix[15] - 
-				  matrix[9]  * matrix[3] * matrix[14] - 
-				  matrix[13] * matrix[2] * matrix[11] + 
-				  matrix[13] * matrix[3] * matrix[10];
+		inv._10 = -_10  * _22 * _33 + 
+				  _10  * _32 * _23 + 
+				  _12  * _20 * _33 - 
+				  _12  * _30 * _23 - 
+				  _13 * _20 * _32 + 
+				  _13 * _30 * _22;
 
-		inv[5] = matrix[0]  * matrix[10] * matrix[15] - 
-				 matrix[0]  * matrix[11] * matrix[14] - 
-				 matrix[8]  * matrix[2] * matrix[15] + 
-				 matrix[8]  * matrix[3] * matrix[14] + 
-				 matrix[12] * matrix[2] * matrix[11] - 
-				 matrix[12] * matrix[3] * matrix[10];
+		inv._11 = _00  * _22 * _33 - 
+				 _00  * _32 * _23 - 
+				 _02  * _20 * _33 + 
+				 _02  * _30 * _23 + 
+				 _03 * _20 * _32 - 
+				 _03 * _30 * _22;
 
-		inv[9] = -matrix[0]  * matrix[9] * matrix[15] + 
-				  matrix[0]  * matrix[11] * matrix[13] + 
-				  matrix[8]  * matrix[1] * matrix[15] - 
-				  matrix[8]  * matrix[3] * matrix[13] - 
-				  matrix[12] * matrix[1] * matrix[11] + 
-				  matrix[12] * matrix[3] * matrix[9];
+		inv._12 = -_00  * _12 * _33 + 
+				  _00  * _32 * _13 + 
+				  _02  * _10 * _33 - 
+				  _02  * _30 * _13 - 
+				  _03 * _10 * _32 + 
+				  _03 * _30 * _12;
 
-		inv[13] = matrix[0]  * matrix[9] * matrix[14] - 
-				  matrix[0]  * matrix[10] * matrix[13] - 
-				  matrix[8]  * matrix[1] * matrix[14] + 
-				  matrix[8]  * matrix[2] * matrix[13] + 
-				  matrix[12] * matrix[1] * matrix[10] - 
-				  matrix[12] * matrix[2] * matrix[9];
+		inv._13 = _00  * _12 * _23 - 
+				  _00  * _22 * _13 - 
+				  _02  * _10 * _23 + 
+				  _02  * _20 * _13 + 
+				  _03 * _10 * _22 - 
+				  _03 * _20 * _12;
 
-		inv[2] = matrix[1]  * matrix[6] * matrix[15] - 
-				 matrix[1]  * matrix[7] * matrix[14] - 
-				 matrix[5]  * matrix[2] * matrix[15] + 
-				 matrix[5]  * matrix[3] * matrix[14] + 
-				 matrix[13] * matrix[2] * matrix[7] - 
-				 matrix[13] * matrix[3] * matrix[6];
+		inv._20 = _10  * _21 * _33 - 
+				 _10  * _31 * _23 - 
+				 _11  * _20 * _33 + 
+				 _11  * _30 * _23 + 
+				 _13 * _20 * _31 - 
+				 _13 * _30 * _21;
 
-		inv[6] = -matrix[0]  * matrix[6] * matrix[15] + 
-				  matrix[0]  * matrix[7] * matrix[14] + 
-				  matrix[4]  * matrix[2] * matrix[15] - 
-				  matrix[4]  * matrix[3] * matrix[14] - 
-				  matrix[12] * matrix[2] * matrix[7] + 
-				  matrix[12] * matrix[3] * matrix[6];
+		inv._21 = -_00  * _21 * _33 + 
+				  _00  * _31 * _23 + 
+				  _01  * _20 * _33 - 
+				  _01  * _30 * _23 - 
+				  _03 * _20 * _31 + 
+				  _03 * _30 * _21;
 
-		inv[10] = matrix[0]  * matrix[5] * matrix[15] - 
-				  matrix[0]  * matrix[7] * matrix[13] - 
-				  matrix[4]  * matrix[1] * matrix[15] + 
-				  matrix[4]  * matrix[3] * matrix[13] + 
-				  matrix[12] * matrix[1] * matrix[7] - 
-				  matrix[12] * matrix[3] * matrix[5];
+		inv._22 = _00  * _11 * _33 - 
+				  _00  * _31 * _13 - 
+				  _01  * _10 * _33 + 
+				  _01  * _30 * _13 + 
+				  _03 * _10 * _31 - 
+				  _03 * _30 * _11;
 
-		inv[14] = -matrix[0]  * matrix[5] * matrix[14] + 
-				   matrix[0]  * matrix[6] * matrix[13] + 
-				   matrix[4]  * matrix[1] * matrix[14] - 
-				   matrix[4]  * matrix[2] * matrix[13] - 
-				   matrix[12] * matrix[1] * matrix[6] + 
-				   matrix[12] * matrix[2] * matrix[5];
+		inv._23 = -_00  * _11 * _23 + 
+				   _00  * _21 * _13 + 
+				   _01  * _10 * _23 - 
+				   _01  * _20 * _13 - 
+				   _03 * _10 * _21 + 
+				   _03 * _20 * _11;
 
-		inv[3] = -matrix[1] * matrix[6] * matrix[11] + 
-				  matrix[1] * matrix[7] * matrix[10] + 
-				  matrix[5] * matrix[2] * matrix[11] - 
-				  matrix[5] * matrix[3] * matrix[10] - 
-				  matrix[9] * matrix[2] * matrix[7] + 
-				  matrix[9] * matrix[3] * matrix[6];
+		inv._30 = -_10 * _21 * _32 + 
+				  _10 * _31 * _22 + 
+				  _11 * _20 * _32 - 
+				  _11 * _30 * _22 - 
+				  _12 * _20 * _31 + 
+				  _12 * _30 * _21;
 
-		inv[7] = matrix[0] * matrix[6] * matrix[11] - 
-				 matrix[0] * matrix[7] * matrix[10] - 
-				 matrix[4] * matrix[2] * matrix[11] + 
-				 matrix[4] * matrix[3] * matrix[10] + 
-				 matrix[8] * matrix[2] * matrix[7] - 
-				 matrix[8] * matrix[3] * matrix[6];
+		inv._31 = _00 * _21 * _32 - 
+				 _00 * _31 * _22 - 
+				 _01 * _20 * _32 + 
+				 _01 * _30 * _22 + 
+				 _02 * _20 * _31 - 
+				 _02 * _30 * _21;
 
-		inv[11] = -matrix[0] * matrix[5] * matrix[11] + 
-				   matrix[0] * matrix[7] * matrix[9] + 
-				   matrix[4] * matrix[1] * matrix[11] - 
-				   matrix[4] * matrix[3] * matrix[9] - 
-				   matrix[8] * matrix[1] * matrix[7] + 
-				   matrix[8] * matrix[3] * matrix[5];
+		inv._32 = -_00 * _11 * _32 + 
+				   _00 * _31 * _12 + 
+				   _01 * _10 * _32 - 
+				   _01 * _30 * _12 - 
+				   _02 * _10 * _31 + 
+				   _02 * _30 * _11;
 
-		inv[15] = matrix[0] * matrix[5] * matrix[10] - 
-				  matrix[0] * matrix[6] * matrix[9] - 
-				  matrix[4] * matrix[1] * matrix[10] + 
-				  matrix[4] * matrix[2] * matrix[9] + 
-				  matrix[8] * matrix[1] * matrix[6] - 
-				  matrix[8] * matrix[2] * matrix[5];
+		inv._33 = _00 * _11 * _22 - 
+				  _00 * _21 * _12 - 
+				  _01 * _10 * _22 + 
+				  _01 * _20 * _12 + 
+				  _02 * _10 * _21 - 
+				  _02 * _20 * _11;
 
-		det = matrix[0] * inv[0] + matrix[1] * inv[4] + matrix[2] * inv[8] + matrix[3] * inv[12];
+		det = _00 * inv._00 + _10 * inv._01 + _20 * inv._02 + _30 * inv._03;
 
 		if (det == 0)
 			throw "No Inverse";
 
 		det = 1.0 / det;
 
-		var result: Matrix4 = Matrix4.empty();
-		for (i in 0...16) {
-			result.matrix[i] = inv[i] * det;
-		}
+		inv._00 = inv._00 * det;
+		inv._10 = inv._10 * det;
+		inv._20 = inv._20 * det;
+		inv._30 = inv._30 * det;
+		inv._01 = inv._01 * det;
+		inv._11 = inv._11 * det;
+		inv._21 = inv._21 * det;
+		inv._31 = inv._31 * det;
+		inv._02 = inv._02 * det;
+		inv._12 = inv._12 * det;
+		inv._22 = inv._22 * det;
+		inv._32 = inv._32 * det;
+		inv._03 = inv._03 * det;
+		inv._13 = inv._13 * det;
+		inv._23 = inv._23 * det;
+		inv._33 = inv._33 * det;
 		
-		return result;
 		
 		
 		
-		/*if (determinant() == 0) throw "No Inverse";
-		var q: Float;
-		var inv = identity();
-
-		for (j in 0...width) {
-			q = get(j, j);
-			if (q == 0) {
-				for (i in j + 1...width) {
-					if (get(j, i) != 0) {
-						for (k in 0...width) {
-							inv.set(k, j, get(k, j) + get(k, i));
-						}
-						q = get(j, j);
-						break;
-					}
-				}
-			}
-			if (q != 0) {
-				for (k in 0...width) {
-					inv.set(k, j, get(k, j) / q);
-				}
-			}
-			for (i in 0...width) {
-				if (i != j) {
-					q = get(j, i);
-					for (k in 0...width) {
-						inv.set(k, i, get(k, i) - q * get(k, j));
-					}
-				}
-			}
-		} */
-		// for (i in 0...width) for (j in 0...width) if (get(j, i) != ((i == j) ? 1 : 0)) throw "Matrix inversion error";
-		// return inv;
-	}*/
+		
+		
+		return inv;
+	}
 }
